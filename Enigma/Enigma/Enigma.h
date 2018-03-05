@@ -60,7 +60,7 @@ private:
 	string notchedChars;
 public:
 	Rotor();
-	Rotor(string, char, char);
+	Rotor(string, string);
 	~Rotor();
 	void setRingChars(string);
 	void setNotches(string);
@@ -92,8 +92,8 @@ private:
 	char dictionary[26];
 public:
 	Plugboard();
-	Plugboard(string);
-	void SetPlugs(string);
+	Plugboard(char *);
+	void SetPlugs(char *);
 	char Translate(char);
 
 
@@ -103,15 +103,18 @@ class Enigma
 {
 private:
 	Rotor * rotors[4];
-	Plugboard plugboard;
-	Reflector reflector;
+	Plugboard *plugboard;
+	Reflector *reflector;
+	int numRotors;
 
 public:
 	Enigma();
+	Enigma(char *, char *, char *, char *);
 	bool SetConfig(string);
-	void SetRotor(int, char );
+	void SetRotor(int, char);
 	void SetRing(int, char);
 	void SetChar(int, char);
+	void Rotate(int);
 	string Encrypt(string);
 	char EncryptChar(char);
 	char DebugEncryptChar(char);
