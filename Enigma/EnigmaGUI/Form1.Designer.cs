@@ -69,6 +69,7 @@
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(121, 21);
             this.comboBox1.TabIndex = 0;
+            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
             // 
             // label1
             // 
@@ -243,9 +244,9 @@
             this.comboBox6.FormattingEnabled = true;
             this.comboBox6.Items.AddRange(new object[] {
             "M4"});
-            this.comboBox6.Location = new System.Drawing.Point(446, 102);
+            this.comboBox6.Location = new System.Drawing.Point(436, 102);
             this.comboBox6.Name = "comboBox6";
-            this.comboBox6.Size = new System.Drawing.Size(57, 21);
+            this.comboBox6.Size = new System.Drawing.Size(84, 21);
             this.comboBox6.TabIndex = 43;
             // 
             // comboBox10

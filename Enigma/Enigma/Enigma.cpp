@@ -1,19 +1,20 @@
 #include "Enigma.h"
 #include <iostream> // only present for debugging
 
-Enigma::Enigma(char *rotorStr, char *ringStr, char *keyStr, char *plugStr)
+Enigma::Enigma(char *discStr, char *rotorStr, char *ringStr, char *keyStr, char *plugStr)
 {
+	entryDisc = new EntryDisc(discStr);
 	numRotors = strlen(rotorStr) - 1; // one of the chars is for the reflector
 	for (int i = 0; i < numRotors; i++)
 	{
-		int rotorNumber = rotorStr[numRotors - i - 1] - '1';
-		rotors[i] = new Rotor(wheelStrings[rotorNumber][0], wheelStrings[rotorNumber][1]);
+		int rotorNumber = rotorStr[numRotors - i - 1] - '0';
+		rotors[i] = new Rotor(wheelStrings[rotorNumber][0]);
 		rotors[i]->setRing(ringStr[numRotors - i - 1]);
- 		rotors[i]->setFirstChar(keyStr[numRotors - i - 1]);		
-	}
-	reflector = new Reflector(rotorStr[strlen(rotorStr)-1] - '1');
+		rotors[i]->setNotches(wheelStrings[rotorNumber][1]);
+		rotors[i]->setFirstChar(keyStr[numRotors - i - 1]);
 
-	plugboard = new Plugboard(plugStr);
+	}
+	reflector = new Reflector(rotorStr[strlen(rotorStr)-1] - '0');
 
 }
 
@@ -23,7 +24,7 @@ string Enigma::Encrypt(string phrase)
 	char tempChar;
 	for (int i = 0; i < phrase.length(); i++)
 	{
-		if (isalpha(phrase[i]))
+		if (startChar <= phrase[i]) //&& phrase[i] < (alphabetSize + startChar))
 			tempChar = EncryptChar(phrase[i]);
 		else
 			tempChar = phrase[i];
@@ -36,7 +37,7 @@ string Enigma::Encrypt(string phrase)
 char Enigma::EncryptChar(char character)
 {
 	Rotate(0);
-
+	character = entryDisc->map(character);
 	character = plugboard->Translate(character);
 	for (int i = 0; i < numRotors; i++)
 	{
@@ -50,23 +51,21 @@ char Enigma::EncryptChar(char character)
 	}
 
 	character = plugboard->Translate(character);
-
+	character = entryDisc->ReverseMap(character);
 	
 	return character;
 }
 
 void Enigma::Rotate(int rotorNum)
 {
+	if (rotors[rotorNum]->getNotches() && rotorNum < numRotors - 1)
+		Rotate(rotorNum + 1);	
 	rotors[rotorNum]->rotate();
-	if (rotors[rotorNum]->getNotches().find(rotors[rotorNum]->GetWindowChar()) != -1)
-		Rotate(rotorNum + 1);
 }
 
-Rotor::Rotor(string charMap, string notches)
+Rotor::Rotor(string charMap)
 {
-	setRingChars(charMap);
-	setNotches(notches);
-	ringOffset = 0;
+	charList = new CircularList(charMap);
 	rotCount = 0;
 }
 
@@ -75,94 +74,83 @@ Rotor::~Rotor()
 	;
 }
 
+/* seemed redundant
 void Rotor::setRingChars(string ringChars)
 {
 	// memory leak here. Need to remove charList
 	/*if (charList != NULL)
 	{
 		delete[] charList;
-	}*/
-	ringOffset = 0;
-	rotCount = 0;
-	charList = new CircularList(ringChars);
-	char reverseString[27];
-	for (int i = 0; i < ringChars.length(); i++)
-	{
-		reverseString[ringChars[i] - 'A'] = i + 'A';
 	}
-	reverseString[26] = '\0';
- 	reverseList = new CircularList(reverseString);
-}
+	rotCount = 0;
 
-void Rotor::setNotches(string notchChars)
-{
-	notchedChars = notchChars;
 }
+*/
 
-string Rotor::getNotches()
+bool Rotor::getNotches()
 {
-	return notchedChars;
-}
-
-char Rotor::GetWindowChar()
-{
-	return 'A' + (rotCount) % 26;
+	return charList->head->notched;
 }
 
 void Rotor::setRing(char lockedChar)
 {
-	ringOffset = 'A' - lockedChar;
-	
-	for (int i = 0; i < -ringOffset; i++)
-	{
-		charList->head = charList->head->prev;
-		reverseList->head = reverseList->head->prev;
-	}
+	rotCount = lockedChar - startChar;	
 }
 
 void Rotor::setFirstChar(char startChar)
 {
-	int offset = startChar - 'A';
+
+	int offset = adjust(startChar, -1) - startChar;
 
 	for (int i = 0; i < offset; i++)
 	{
-		charList->head = charList->head->next;
-		reverseList->head = reverseList->head->next;
-		ringOffset++;
-		rotCount++;
+		rotate();
 	}
+
+	rotCount = offset;
+}
+
+void Rotor::setNotches(string notches) 
+{
+	for (int i = 0; i < notches.length(); i++)
+	{
+		Node *index = charList->head;
+		char position = adjust(notches.at(i), -1) - startChar;
+		for (int j = 0; j < position; j++)
+			index = index->next;
+		index->notched = true;
+	}
+}
+
+//adds or subtracts rotCount from given char, pass 1 to add, -1 to subtract;
+char Rotor::adjust(char inChar, int sign)
+{
+	char outChar = inChar - startChar;
+	outChar = (outChar + rotCount * sign) % alphabetSize;
+	if (outChar < 0)
+		outChar += alphabetSize;
+	return outChar + startChar;
 }
 
 char Rotor::map(char inChar)
 {
 	char outChar = charList->getOutput(inChar);
-	outChar = 'A' + (outChar  - 'A' +26 - ringOffset%26) % 26;
+	outChar = adjust(outChar, -1);
 	return outChar;
 }
 
 char Rotor::ReverseMap(char inChar)
 {
-	char outChar = reverseList->getOutput(inChar);
-	outChar = 'A' + (outChar - 'A' + 26 - ringOffset%26) % 26;
+	char outChar = adjust(inChar, 1);
+	outChar = charList->getReverseOutput(outChar);
 	return outChar;
 }
 
 void Rotor::rotate()
 {
+	charList->tail = charList->head;
 	charList->head = charList->head->next;
-	reverseList->head = reverseList->head->next;
-	ringOffset++;
 	rotCount++;
-}
-
-	// not complete probably dont need it
-void Rotor::ChangeRotor(int rotorNum)
-{
-	if (charList != NULL)
-	{
-		delete [] charList;
-	}
-
 }
 
 CircularList::CircularList(string charMap)
@@ -171,7 +159,7 @@ CircularList::CircularList(string charMap)
 
 	for (int i = 0; i < charMap.length(); i++)
 	{
-		this->insertNode(charMap[i]);
+		this->insertNode(charMap[i]);		
 	}
 }
 
@@ -188,36 +176,22 @@ void CircularList::insertNode(char mapChar)
 	{
 		head = temp;
 		head->next = head;
-		head->prev = head;
+		tail = head;
 	}
 	else
 	{
+		tail->next = temp;
+		tail = temp;
 		temp->next = head;
-		temp->prev = head->prev;
-		head->prev->next = temp;
-		head->prev = temp;
+		
 	}
 	count++;
-}
-
-
-Node * CircularList::findChar(char searchChar)
-{
-	Node * curNode = head;
-	for (int i = 0; i < count; i++)
-	{
-		if (curNode->index == searchChar)
-			return curNode;
-		else
-			curNode = curNode->next;
-	}
-	return NULL;
 }
 
 char CircularList::getOutput(char inChar)
 {
 	Node *curNode = head;
-	int index = inChar - 'A';
+	int index = inChar - startChar;
 	for (int i = 0; i < index; i++)
 	{
 		curNode = curNode->next;
@@ -225,15 +199,22 @@ char CircularList::getOutput(char inChar)
 	return curNode->index;
 }
 
+char CircularList::getReverseOutput(char inChar)
+{
+	Node *curNode = head;
+	char outChar = startChar;
+	while (curNode->index != inChar)
+	{
+		curNode = curNode->next;
+		outChar++;
+	}
+	return outChar;
+}
+
 Node::Node(char indexChar)
 {
 	index = indexChar;
 	notched = false;
-}
-
-Node::~Node()
-{
-	;
 }
 
 Plugboard::Plugboard(char *letterPairs)
@@ -243,18 +224,18 @@ Plugboard::Plugboard(char *letterPairs)
 
 void Plugboard::SetPlugs(char *letterPairs)
 {
-	for (int i = 0; i < 26; i++)
-		dictionary[i] = 'A' + i;
+	for (int i = 0; i < alphabetSize; i++)
+		dictionary[i] = startChar + i;
 	for (int i = 0; i < strlen(letterPairs); i += 2)
 	{
-		dictionary[letterPairs[i] - 'A'] = letterPairs[i + 1];
-		dictionary[letterPairs[i + 1] - 'A'] = letterPairs[i];
+		dictionary[letterPairs[i] - startChar] = letterPairs[i + 1];
+		dictionary[letterPairs[i + 1] - startChar] = letterPairs[i];
 	}
 }
 
 char Plugboard::Translate(char inChar)
 {
-	return dictionary[inChar - 'A'];
+	return dictionary[inChar - startChar];
 }
 
 Reflector::Reflector(int reflectorNumber)
@@ -265,4 +246,20 @@ Reflector::Reflector(int reflectorNumber)
 char Reflector::map(char inChar)
 {
 	return charList->getOutput(inChar);
+}
+
+EntryDisc::EntryDisc(char *discStr)
+{
+	int discNum = discStr[0] - 'A';
+	charList = new CircularList(entryDiscs[discNum]);
+}
+
+char EntryDisc::map(char inChar)
+{
+	return charList->getOutput(inChar);
+}
+
+char EntryDisc::ReverseMap(char inChar)
+{
+	return charList->getReverseOutput(inChar);
 }
