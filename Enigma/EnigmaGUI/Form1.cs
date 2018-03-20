@@ -102,7 +102,7 @@ namespace EnigmaGUI
             cmd.StartInfo.UseShellExecute = false;
             cmd.Start();
 
-            cmd.WaitForExit(1000);
+            cmd.WaitForExit(2000);
             if (cmd.ExitCode == 0)
                 textBox2.Text = cmd.StandardOutput.ReadToEnd();
             else
@@ -123,7 +123,7 @@ namespace EnigmaGUI
             enigmaList.Add(newCfg);
             newCfg = new EnigmaCfg("Enigma M3", "RSTUVWXY", false, true, "A", "FGH");
             enigmaList.Add(newCfg);
-            newCfg = new EnigmaCfg("Enigma M4", "RSTUVWXY", true, true, "A", "DEFGH");
+            newCfg = new EnigmaCfg("Enigma M4", "RSTUVWXYZ1", true, true, "A", "DEFGH");
             enigmaList.Add(newCfg);
             newCfg = new EnigmaCfg("German Railway", "DEF", false, false, "A", "B");
 
@@ -149,6 +149,10 @@ namespace EnigmaGUI
             newRotor = new Rotor("VII", "X");
             rotorList.Add(newRotor);
             newRotor = new Rotor("VIII", "Y");
+            rotorList.Add(newRotor);
+            newRotor = new Rotor("Beta", "Z");
+            rotorList.Add(newRotor);
+            newRotor = new Rotor("Gamma", "1");
             rotorList.Add(newRotor);
 
             newRotor = new Rotor("IC", "A");
@@ -197,19 +201,19 @@ namespace EnigmaGUI
             BindingList<Rotor> reflectorList = new BindingList<Rotor>();
             Rotor newRotor = new Rotor("None", "A");
             reflectorList.Add(newRotor);
-            newRotor = new Rotor("ETW", "B");
+            newRotor = new Rotor("UKW", "B");
             reflectorList.Add(newRotor);
-            newRotor = new Rotor("ETW", "C");
+            newRotor = new Rotor("UKW", "C");
             reflectorList.Add(newRotor);
-            newRotor = new Rotor("Beta", "D");
+            newRotor = new Rotor("Reflector A", "D");
             reflectorList.Add(newRotor);
-            newRotor = new Rotor("Gamma", "E");
+            newRotor = new Rotor("Reflector B", "E");
             reflectorList.Add(newRotor);
-            newRotor = new Rotor("Reflector A", "F");
+            newRotor = new Rotor("Reflector C", "F");
             reflectorList.Add(newRotor);
-            newRotor = new Rotor("Reflector B", "G");
+            newRotor = new Rotor("Reflector B Thin", "G");
             reflectorList.Add(newRotor);
-            newRotor = new Rotor("Reflector C", "H");
+            newRotor = new Rotor("Reflector C Thin", "H");
             reflectorList.Add(newRotor);
 
             return reflectorList;

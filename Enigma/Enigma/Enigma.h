@@ -9,42 +9,43 @@ using namespace std;
 class Node
 {
 public:
-	Node *next;
-	Node *prev;
+	Node * next;
 	char index;
 	bool notched;
 	Node(char);
-	//~Node();
-	void setNotched();
 };
 
 class CircularList
 {
 public:
-	Node *head;
+	Node * head;
 	Node *tail;
 	int count;
 	CircularList(string);
-	~CircularList();
 	char getOutput(char);
 	char getReverseOutput(char);
 	void insertNode(char);
-	Node * findChar(char);
+};
+
+class Plugboard
+{
+private:
+	char dictionary[26];
+public:
+	Plugboard(string);
+	char Translate(char);
 };
 
 class Rotor
 {
 private:
-	CircularList *charList;
+	CircularList * charList;
 	CircularList *reverseList;
 	int ringOffset;
 	int rotCount;
 	string notchedChars;
 public:
-	//Rotor();
 	Rotor(string);
-	~Rotor();
-	void setRingChars(string);
 	void setNotches(string);
 	string getNotches();
 	void setRing(char);
@@ -53,16 +54,14 @@ public:
 	char ReverseMap(char);
 	char map(char);
 	void rotate();
-	//void ChangeRotor(int);
 	char GetWindowChar();
 };
 
 class Reflector
 {
 private:
-	CircularList *charList;
+	CircularList * charList;
 public:
-	//Reflector();
 	Reflector(string);
 	char map(char);
 };
@@ -77,17 +76,6 @@ public:
 	char ReverseMap(char);
 };
 
-class Plugboard
-{
-private:
-	char dictionary[26];
-public:
-	Plugboard(string);
-	void SetPlugs(string);
-	char Translate(char);
-};
-
-
 class Enigma
 {
 private:
@@ -101,17 +89,10 @@ public:
 	string reflectors[ASCII];
 	string entryDiscs[ASCII];
 
-	//Enigma();
 	Enigma(string, string, string, string, string);
-	void initializeStrings(void);
-	//bool SetConfig(string);
-	//void SetRotor(int, char);
-	//void SetRing(int, char);
-	//void SetChar(int, char);
-	void Rotate(int);
 	string Encrypt(string);
 	char EncryptChar(char);
-	//char DebugEncryptChar(char);
+	void Rotate(int);
 	int charHash(char);
-
+	void initializeStrings(void);
 };
