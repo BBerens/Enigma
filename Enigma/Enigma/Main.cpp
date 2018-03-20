@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 	}
 
 	Enigma *enigma1 = new Enigma(argv[1], argv[2], argv[3], argv[4], argv[5]);
-	cout <<  enigma1->Encrypt(argv[5]);
+	cout <<  enigma1->Encrypt(argv[6]);
 	cin.get();
 	return 0;
 	

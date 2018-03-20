@@ -1,20 +1,24 @@
 #include "Enigma.h"
 #include <iostream> // only present for debugging
 
-Enigma::Enigma(char *discStr, char *rotorStr, char *ringStr, char *keyStr, char *plugStr)
+Enigma::Enigma(string discStr, string rotorStr, string ringStr, string keyStr, string plugStr)
 {
-	entryDisc = new EntryDisc(discStr);
-	numRotors = strlen(rotorStr) - 1; // one of the chars is for the reflector
+	initializeStrings();
+	string discChars = entryDiscs[charHash(discStr[0])];
+	entryDisc = new EntryDisc(discChars);
+	plugboard = new Plugboard(plugStr);
+	numRotors = rotorStr.length() - 1; // one of the chars is for the reflector
 	for (int i = 0; i < numRotors; i++)
 	{
-		int rotorNumber = rotorStr[numRotors - i - 1] - '0';
-		rotors[i] = new Rotor(wheelStrings[rotorNumber][0]);
+		char wheelChar = rotorStr[numRotors - i - 1];
+		char deleteMe = charHash(wheelChar);
+		rotors[i] = new Rotor(wheelStrings[charHash(wheelChar)][0]);
+		rotors[i]->setNotches(wheelStrings[charHash(wheelChar)][1]);
 		rotors[i]->setRing(ringStr[numRotors - i - 1]);
-		rotors[i]->setNotches(wheelStrings[rotorNumber][1]);
 		rotors[i]->setFirstChar(keyStr[numRotors - i - 1]);
-
 	}
-	reflector = new Reflector(rotorStr[strlen(rotorStr)-1] - '0');
+	string reflectorChars = reflectors[charHash(rotorStr[rotorStr.length() - 1])];
+	reflector = new Reflector(reflectorChars);
 
 }
 
@@ -24,7 +28,7 @@ string Enigma::Encrypt(string phrase)
 	char tempChar;
 	for (int i = 0; i < phrase.length(); i++)
 	{
-		if (startChar <= phrase[i]) //&& phrase[i] < (alphabetSize + startChar))
+		if (STARTCHAR <= phrase[i] && phrase[i] < (ALPHABETSIZE + STARTCHAR))
 			tempChar = EncryptChar(phrase[i]);
 		else
 			tempChar = phrase[i];
@@ -63,9 +67,9 @@ void Enigma::Rotate(int rotorNum)
 	rotors[rotorNum]->rotate();
 }
 
-Rotor::Rotor(string charMap)
+Rotor::Rotor(string rotorChars)
 {
-	charList = new CircularList(charMap);
+	charList = new CircularList(rotorChars);
 	rotCount = 0;
 }
 
@@ -94,7 +98,7 @@ bool Rotor::getNotches()
 
 void Rotor::setRing(char lockedChar)
 {
-	rotCount = lockedChar - startChar;	
+	rotCount = lockedChar - STARTCHAR;
 }
 
 void Rotor::setFirstChar(char startChar)
@@ -115,7 +119,7 @@ void Rotor::setNotches(string notches)
 	for (int i = 0; i < notches.length(); i++)
 	{
 		Node *index = charList->head;
-		char position = adjust(notches.at(i), -1) - startChar;
+		char position = adjust(notches.at(i), -1) - STARTCHAR;
 		for (int j = 0; j < position; j++)
 			index = index->next;
 		index->notched = true;
@@ -125,11 +129,11 @@ void Rotor::setNotches(string notches)
 //adds or subtracts rotCount from given char, pass 1 to add, -1 to subtract;
 char Rotor::adjust(char inChar, int sign)
 {
-	char outChar = inChar - startChar;
-	outChar = (outChar + rotCount * sign) % alphabetSize;
+	char outChar = inChar - STARTCHAR;
+	outChar = (outChar + rotCount * sign) % ALPHABETSIZE;
 	if (outChar < 0)
-		outChar += alphabetSize;
-	return outChar + startChar;
+		outChar += ALPHABETSIZE;
+	return outChar + STARTCHAR;
 }
 
 char Rotor::map(char inChar)
@@ -191,7 +195,7 @@ void CircularList::insertNode(char mapChar)
 char CircularList::getOutput(char inChar)
 {
 	Node *curNode = head;
-	int index = inChar - startChar;
+	int index = inChar - STARTCHAR;
 	for (int i = 0; i < index; i++)
 	{
 		curNode = curNode->next;
@@ -202,7 +206,7 @@ char CircularList::getOutput(char inChar)
 char CircularList::getReverseOutput(char inChar)
 {
 	Node *curNode = head;
-	char outChar = startChar;
+	char outChar = STARTCHAR;
 	while (curNode->index != inChar)
 	{
 		curNode = curNode->next;
@@ -217,30 +221,30 @@ Node::Node(char indexChar)
 	notched = false;
 }
 
-Plugboard::Plugboard(char *letterPairs)
+Plugboard::Plugboard(string letterPairs)
 {
 	SetPlugs(letterPairs);
 }
 
-void Plugboard::SetPlugs(char *letterPairs)
+void Plugboard::SetPlugs(string letterPairs)
 {
-	for (int i = 0; i < alphabetSize; i++)
-		dictionary[i] = startChar + i;
-	for (int i = 0; i < strlen(letterPairs); i += 2)
+	for (int i = 0; i < ALPHABETSIZE; i++)
+		dictionary[i] = STARTCHAR + i;
+	for (int i = 0; i < letterPairs.length(); i += 2)
 	{
-		dictionary[letterPairs[i] - startChar] = letterPairs[i + 1];
-		dictionary[letterPairs[i + 1] - startChar] = letterPairs[i];
+		dictionary[letterPairs[i] - STARTCHAR] = letterPairs[i + 1];
+		dictionary[letterPairs[i + 1] - STARTCHAR] = letterPairs[i];
 	}
 }
 
 char Plugboard::Translate(char inChar)
 {
-	return dictionary[inChar - startChar];
+	return dictionary[inChar - STARTCHAR];
 }
 
-Reflector::Reflector(int reflectorNumber)
+Reflector::Reflector(string reflectorChars)
  {
-	charList = new CircularList(reflectors[reflectorNumber]);
+	charList = new CircularList(reflectorChars);
 }
 
 char Reflector::map(char inChar)
@@ -248,10 +252,9 @@ char Reflector::map(char inChar)
 	return charList->getOutput(inChar);
 }
 
-EntryDisc::EntryDisc(char *discStr)
+EntryDisc::EntryDisc(string discChars)
 {
-	int discNum = discStr[0] - 'A';
-	charList = new CircularList(entryDiscs[discNum]);
+	charList = new CircularList(discChars);
 }
 
 char EntryDisc::map(char inChar)
@@ -263,3 +266,91 @@ char EntryDisc::ReverseMap(char inChar)
 {
 	return charList->getReverseOutput(inChar);
 }
+
+
+////////////////////////////////////////////////////
+
+int Enigma::charHash(char inChar) { return (int)inChar; }
+
+void Enigma::initializeStrings(void)
+{
+	//real rotors, alphabetSize = 26, startChar = 'A'
+
+	wheelStrings[charHash('A')][0] = "DMTWSILRUYQNKFEJCAZBPGXOHV";		// Enigma A,B IC
+	wheelStrings[charHash('A')][1] = "";
+	wheelStrings[charHash('B')][0] = "HQZGPJTMOBLNCIFDYAWVEUSRKX";		// Enigma A,B IIC
+	wheelStrings[charHash('B')][1] = "";
+	wheelStrings[charHash('C')][0] = "UQNTLSZFMREHDPXKIBVYGJCWOA";		// Enigma A,B IIIC
+	wheelStrings[charHash('C')][1] = "";
+
+	wheelStrings[charHash('D')][0] = "JGDQOXUSCAMIFRVTPNEWKBLZYH";		// German Railway I
+	wheelStrings[charHash('D')][1] = "N";
+	wheelStrings[charHash('E')][0] = "NTZPSFBOKMWRCJDIVLAEYUXHGQ";		// German Railway II
+	wheelStrings[charHash('E')][1] = "E";
+	wheelStrings[charHash('F')][0] = "JVIUBHTCDYAKEQZPOSGXNRMWFL";		// German Railway III
+	wheelStrings[charHash('F')][1] = "Y";
+
+	wheelStrings[charHash('G')][0] = "LPGSZMHAEOQKVXRFYBUTNICJDW";		// Enigma D,K I
+	wheelStrings[charHash('G')][1] = "Y";
+	wheelStrings[charHash('H')][0] = "SLVGBTFXJQOHEWIRZYAMKPCNDU";		// Enigma D,K II
+	wheelStrings[charHash('H')][1] = "E";
+	wheelStrings[charHash('I')][0] = "CJGDPSHKTURAWZXFMYNQOBVLIE";		// Enigma D,K III
+	wheelStrings[charHash('I')][1] = "N";
+
+	wheelStrings[charHash('J')][0] = "KPTYUELOCVGRFQDANJMBSWHZXI";		// Enigma T I
+	wheelStrings[charHash('J')][1] = "WZEKQ";
+	wheelStrings[charHash('K')][0] = "UPHZLWEQMTDJXCAKSOIGVBYFNR";		// Enigma T II
+	wheelStrings[charHash('K')][1] = "WZFLR";
+	wheelStrings[charHash('L')][0] = "QUDLYRFEKONVZAXWHMGPJBSICT";		// Enigma T III
+	wheelStrings[charHash('L')][1] = "WZEKQ";
+	wheelStrings[charHash('M')][0] = "CIWTBKXNRESPFLYDAGVHQUOJZM";		// Enigma T IV
+	wheelStrings[charHash('M')][1] = "WZFLR";
+	wheelStrings[charHash('N')][0] = "UAXGISNJBVERDYLFZWTPCKOHMQ";		// Enigma T V
+	wheelStrings[charHash('N')][1] = "YCFKR";
+	wheelStrings[charHash('O')][0] = "XFUZGALVHCNYSEWQTDMRBKPIOJ";		// Enigma T VI
+	wheelStrings[charHash('O')][1] = "XEIMQ";
+	wheelStrings[charHash('P')][0] = "BJVFTXPLNAYOZIKWGDQERUCHSM";		// Enigma T VII
+	wheelStrings[charHash('P')][1] = "YCFKR";
+	wheelStrings[charHash('Q')][0] = "YMTPNZHWKODAJXELUQVGCBISFR";		// Enigma T VIII
+	wheelStrings[charHash('Q')][1] = "XEIMQ";
+
+	wheelStrings[charHash('R')][0] = "EKMFLGDQVZNTOWYHXUSPAIBRCJ";		// Enigma M1,M3,M4 I
+	wheelStrings[charHash('R')][1] = "Q";
+	wheelStrings[charHash('S')][0] = "AJDKSIRUXBLHWTMCQGZNPYFVOE";		// Enigma M1,M3,M4 II
+	wheelStrings[charHash('S')][1] = "E";
+	wheelStrings[charHash('T')][0] = "BDFHJLCPRTXVZNYEIWGAKMUSQO";		// Enigma M1,M3,M4 III
+	wheelStrings[charHash('T')][1] = "V";
+	wheelStrings[charHash('U')][0] = "ESOVPZJAYQUIRHXLNFTGKDCMWB";		// Enigma M1,M3,M4 IV
+	wheelStrings[charHash('U')][1] = "J";
+	wheelStrings[charHash('V')][0] = "VZBRGITYUPSDNHLXAWMJQOFECK";		// Enigma M1,M3,M4 V
+	wheelStrings[charHash('V')][1] = "Z";
+	wheelStrings[charHash('W')][0] = "JPGVOUMFYQBENHZRDKASXLICTW";		// Enigma M1,M3,M4 VI 
+	wheelStrings[charHash('W')][1] = "ZM";
+	wheelStrings[charHash('X')][0] = "NZJHGRCXMYSWBOUFAIVLPEKQDT";		// Enigma M1,M3,M4 VII
+	wheelStrings[charHash('X')][1] = "ZM";
+	wheelStrings[charHash('Y')][0] = "FKQHTLXOCBJSPDZRAMEWNIUYGV";		// Enigma M1,M3,M4 VIII
+	wheelStrings[charHash('Y')][1] = "ZM";
+	wheelStrings[charHash('Z')][0] = "LEYJVCNIXWPBQMDRTAKZGFUHOS";		// M4 Greek Rotor "b" (beta)
+	wheelStrings[charHash('Z')][1] = "";
+	wheelStrings[charHash('1')][0] = "FSOKANUERHMBTIYCWLQPZXVGJD";		// M4 Greek Rotor "g" (gamma)
+	wheelStrings[charHash('1')][1] = "";
+
+
+	reflectors[charHash('A')] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";  // Enigma A,B did not have reflectors so there was translation
+	reflectors[charHash('B')] = "QYHOGNECVPUZTFDJAXWMKISRBL";  // German Railway Reflector
+	reflectors[charHash('C')] = "IMETCGFRAYSQBZXWLHKDVUPOJN";  // Swiss K Reflector
+	reflectors[charHash('D')] = "LEYJVCNIXWPBQMDRTAKZGFUHOS";  // M4 Beta Rotor
+	reflectors[charHash('E')] = "FSOKANUERHMBTIYCWLQPZXVGJD";  // M4 Gamma Rotor
+	reflectors[charHash('F')] = "EJMZALYXVBWFCRQUONTSPIKHGD";  // M1,M3,M4 Reflector A
+	reflectors[charHash('G')] = "YRUHQSLDPXNGOKMIEBFZCWVJAT";  // M1,M3,M4 Reflector B
+	reflectors[charHash('H')] = "FVPJIAOYEDRZXWGCTKUQSBNMHL";  // M1,M3,M4 Reflector C
+	reflectors[charHash('I')] = "ENKQAUYWJICOPBLMDXZVFTHRGS";  // M4 R1 (M3 + Thin)
+	reflectors[charHash('J')] = "RDOBJNTKVEHMLFCWZAXGYIPSUQ";  // M4 R1 (M3 + Thin)
+	
+
+	
+	entryDiscs[charHash('A')] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";  // standard no translation
+	entryDiscs[charHash('B')] = "QWERTZUIOASDFGHJKPYXCVBNML";  // Qwerty based translation
+	entryDiscs[charHash('C')] = "KZROUQHYAIGBLWVSTDXFPNMCJE";  // Enigma T-specific entry disc
+
+};	
