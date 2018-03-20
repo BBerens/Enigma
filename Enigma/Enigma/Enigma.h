@@ -10,11 +10,12 @@ class Node
 {
 public:
 	Node *next;
+	Node *prev;
 	char index;
 	bool notched;
 	Node(char);
 	//~Node();
-	//void setNotched();
+	void setNotched();
 };
 
 class CircularList
@@ -28,7 +29,7 @@ public:
 	char getOutput(char);
 	char getReverseOutput(char);
 	void insertNode(char);
-	//Node * findChar(char);
+	Node * findChar(char);
 };
 
 class Rotor
@@ -43,9 +44,9 @@ public:
 	//Rotor();
 	Rotor(string);
 	~Rotor();
-	//void setRingChars(string);
+	void setRingChars(string);
 	void setNotches(string);
-	bool getNotches();
+	string getNotches();
 	void setRing(char);
 	void setFirstChar(char);
 	char adjust(char, int);
@@ -53,7 +54,7 @@ public:
 	char map(char);
 	void rotate();
 	//void ChangeRotor(int);
-	//char GetWindowChar();
+	char GetWindowChar();
 };
 
 class Reflector

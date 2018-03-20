@@ -61,15 +61,16 @@ char Enigma::EncryptChar(char character)
 }
 
 void Enigma::Rotate(int rotorNum)
-{
-	if (rotors[rotorNum]->getNotches() && rotorNum < numRotors - 1)
-		Rotate(rotorNum + 1);	
+{	
+	if (rotors[rotorNum]->getNotches().find(rotors[rotorNum]->GetWindowChar()) != -1)
+		Rotate(rotorNum + 1);
 	rotors[rotorNum]->rotate();
 }
 
 Rotor::Rotor(string rotorChars)
 {
-	charList = new CircularList(rotorChars);
+	setRingChars(rotorChars);
+	ringOffset = 0;
 	rotCount = 0;
 }
 
@@ -78,82 +79,86 @@ Rotor::~Rotor()
 	;
 }
 
-/* seemed redundant
+// seemed redundant
+
 void Rotor::setRingChars(string ringChars)
 {
-	// memory leak here. Need to remove charList
-	/*if (charList != NULL)
-	{
-		delete[] charList;
-	}
-	rotCount = 0;
-
-}
-*/
-
-bool Rotor::getNotches()
+// memory leak here. Need to remove charList
+/*if (charList != NULL)
 {
-	return charList->head->notched;
+delete[] charList;
+}*/
+ringOffset = 0;
+rotCount = 0;
+charList = new CircularList(ringChars);
+char reverseString[27];
+for (int i = 0; i < ringChars.length(); i++)
+{
+	reverseString[ringChars[i] - 'A'] = i + 'A';
+}
+reverseString[26] = '\0';
+reverseList = new CircularList(reverseString);
+}
+
+
+string Rotor::getNotches()
+{
+	return notchedChars;
+}
+
+char Rotor::GetWindowChar()
+{
+	return 'A' + (rotCount) % 26;
 }
 
 void Rotor::setRing(char lockedChar)
 {
-	rotCount = lockedChar - STARTCHAR;
+	ringOffset = 'A' - lockedChar;
+
+	for (int i = 0; i < -ringOffset; i++)
+	{
+		charList->head = charList->head->prev;
+		reverseList->head = reverseList->head->prev;
+	}
 }
 
 void Rotor::setFirstChar(char startChar)
 {
-
-	int offset = adjust(startChar, -1) - startChar;
+	int offset = startChar - 'A';
 
 	for (int i = 0; i < offset; i++)
 	{
-		rotate();
+		charList->head = charList->head->next;
+		reverseList->head = reverseList->head->next;
+		ringOffset++;
+		rotCount++;
 	}
-
-	rotCount = offset;
 }
 
 void Rotor::setNotches(string notches) 
 {
-	for (int i = 0; i < notches.length(); i++)
-	{
-		Node *index = charList->head;
-		char position = adjust(notches.at(i), -1) - STARTCHAR;
-		for (int j = 0; j < position; j++)
-			index = index->next;
-		index->notched = true;
-	}
-}
-
-//adds or subtracts rotCount from given char, pass 1 to add, -1 to subtract;
-char Rotor::adjust(char inChar, int sign)
-{
-	char outChar = inChar - STARTCHAR;
-	outChar = (outChar + rotCount * sign) % ALPHABETSIZE;
-	if (outChar < 0)
-		outChar += ALPHABETSIZE;
-	return outChar + STARTCHAR;
+	notchedChars = notches;
 }
 
 char Rotor::map(char inChar)
 {
 	char outChar = charList->getOutput(inChar);
-	outChar = adjust(outChar, -1);
+	outChar = 'A' + (outChar - 'A' + 26 - ringOffset % 26) % 26;
 	return outChar;
 }
 
 char Rotor::ReverseMap(char inChar)
 {
-	char outChar = adjust(inChar, 1);
-	outChar = charList->getReverseOutput(outChar);
+	char outChar = reverseList->getOutput(inChar);
+	outChar = 'A' + (outChar - 'A' + 26 - ringOffset % 26) % 26;
 	return outChar;
 }
 
 void Rotor::rotate()
 {
-	charList->tail = charList->head;
 	charList->head = charList->head->next;
+	reverseList->head = reverseList->head->next;
+	ringOffset++;
 	rotCount++;
 }
 
@@ -180,16 +185,30 @@ void CircularList::insertNode(char mapChar)
 	{
 		head = temp;
 		head->next = head;
-		tail = head;
+		head->prev = head;
+		
 	}
 	else
 	{
-		tail->next = temp;
-		tail = temp;
 		temp->next = head;
-		
+		temp->prev = head->prev;
+		head->prev->next = temp;
+		head->prev = temp;		
 	}
 	count++;
+}
+
+Node * CircularList::findChar(char searchChar)
+{
+	Node * curNode = head;
+	for (int i = 0; i < count; i++)
+	{
+		if (curNode->index == searchChar)
+			return curNode;
+		else
+			curNode = curNode->next;
+	}
+	return NULL;
 }
 
 char CircularList::getOutput(char inChar)
